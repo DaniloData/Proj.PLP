@@ -1,0 +1,16 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity universal_ON_ctrl is
+    Port ( 
+        seg_btn : in STD_LOGIC; -- Entrada A
+        seg_ext : in STD_LOGIC; -- Entrada B
+        seg_out : out STD_LOGIC -- Saída Y = A OR B
+    );
+end universal_ON_ctrl;
+
+architecture Behavioral of universal_ON_ctrl is
+begin
+    -- Apenas lógica combinacional pura. Sem Process, Sem Clock, Sem Reset.
+    seg_out <= seg_btn OR seg_ext;
+end Behavioral;
