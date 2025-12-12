@@ -1,0 +1,73 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity universal_rst_ctrl is
+    Port (
+        CLK             : in  STD_LOGIC;  -- Clock Principal (Ex: 100 MHz)
+        RST_DIGITAL     : in  STD_LOGIC;  -- Reset de Porta Digital (Limpo)
+        RST_BUTTON_RAW  : in  STD_LOGIC;  -- Entrada Bruta do Botão (Sujeita a Bounce)
+        RST_UNIVERSAL   : out STD_LOGIC   -- Saída: Reset Final (Ativo em nível alto)
+    );
+end universal_rst_ctrl;
+
+architecture Behavioral of universal_rst_ctrl is
+
+    -- Constante para o Debounce: 20ms em um clock de 100MHz (2,000,000 ciclos)
+    -- Isso garante que o botão fique estável por 20ms.
+    constant C_DEBOUNCE_MAX : integer := 2000000;
+    
+    -- Sinal interno para o contador de debounce (21 bits para 2 milhões)
+    signal debounce_count   : integer range 0 to C_DEBOUNCE_MAX := 0;
+    
+    -- Registradores de sincronização para o botão
+    signal button_sync_q1   : STD_LOGIC := '0';
+    signal button_sync_q2   : STD_LOGIC := '0';
+    
+    -- Saída limpa do Debouncer
+    signal RST_BUTTON_CLEAN : STD_LOGIC := '0';
+
+begin
+
+    ----------------------------------------------------------
+    -- 1. Lógica de Debounce (Descontaminação do Botão)
+    ----------------------------------------------------------
+    
+    -- O Debouncer usa o contador para medir o tempo que o botão fica estável.
+    process(CLK)
+    begin
+        if rising_edge(CLK) then
+        
+            -- Sincroniza a entrada bruta do botão (dois estágios para metestabilidade)
+            button_sync_q1 <= RST_BUTTON_RAW;
+            button_sync_q2 <= button_sync_q1;
+
+            -- Verifica se o sinal sincronizado é diferente do sinal limpo atual
+            if button_sync_q2 /= RST_BUTTON_CLEAN then
+                
+                -- Se o contador atingir o máximo, o sinal está estável: atualiza RST_BUTTON_CLEAN
+                if debounce_count = C_DEBOUNCE_MAX then
+                    RST_BUTTON_CLEAN <= button_sync_q2;
+                    debounce_count   <= 0;
+                else
+                    -- Incrementa o contador enquanto o sinal for instável
+                    debounce_count <= debounce_count + 1;
+                end if;
+                
+            else
+                -- Se o sinal sincronizado for igual ao sinal limpo, reseta o contador
+                debounce_count <= 0;
+            end if;
+            
+        end if;
+    end process;
+
+    ----------------------------------------------------------
+    -- 2. Lógica OR Universal
+    ----------------------------------------------------------
+    
+    -- O Reset Universal é ativo se o Reset Digital OU o Reset do Botão estiverem ativos.
+    -- (Assumindo que ambos os sinais são ativos em nível alto '1')
+    RST_UNIVERSAL <= RST_DIGITAL OR RST_BUTTON_CLEAN;
+    
+end Behavioral;
