@@ -1,0 +1,31 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity flipflop_d is
+    Port ( 
+        CLK : in  STD_LOGIC; -- Sensor entra aqui
+        RST : in  STD_LOGIC; -- Reset entra aqui
+        Q   : out STD_LOGIC  -- Saída para o alarme
+    );
+end flipflop_d;
+
+architecture Behavioral of flipflop_d is
+    -- Não precisamos declarar sinal D, podemos usar literais '0' e '1' direto
+begin
+
+    -- IMPORTANTE: RST deve estar na lista de sensibilidade do processo
+    process(CLK, RST)
+    begin
+        -- 1. Verifica o Reset PRIMEIRO (Reset Assíncrono)
+        -- Isso funciona mesmo se o CLK (sensor) estiver parado em 0.
+        if RST = '1' then
+            Q <= '0'; -- Desliga o alarme (equivalente ao seu "NOT D")
+            
+        -- 2. Se não for Reset, verifica se houve borda no sensor
+        elsif rising_edge(CLK) then
+             Q <= '1'; -- Liga o alarme (equivalente ao seu "D")
+        end if;
+        
+    end process;
+
+end Behavioral;
