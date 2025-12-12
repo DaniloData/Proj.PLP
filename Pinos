@@ -1,0 +1,139 @@
+## =========================================================
+## ARQUIVO DE RESTRIÇÕES (XDC) - CORRIGIDO
+## =========================================================
+
+## CLOCK
+set_property PACKAGE_PIN W5 [get_ports clk]
+	set_property IOSTANDARD LVCMOS33 [get_ports clk]
+	create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} [get_ports clk]
+
+## =========================================================
+## RESETs e DEBUG
+## =========================================================
+# Entrada RST (Botão Central)
+set_property PACKAGE_PIN U18 [get_ports {RST}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {RST}]
+
+
+
+# Pino U18 é o Botão Central da Basys 3
+## Substitua a linha do U18 por esta:
+set_property PACKAGE_PIN U17 [get_ports {reset}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {reset}]
+
+# Saída de visualização do reset (LED 0)
+# Se o seu VHDL tiver a saída "resete", mantenha estas linhas.
+# Se o nome no VHDL for diferente, altere "resete" abaixo para o nome correto.
+set_property PACKAGE_PIN U16 [get_ports {resete}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {resete}]
+
+# Saída stemp (Mapeado no LED 15 - L1 - para corrigir o erro de 'unplaced')
+set_property PACKAGE_PIN L1 [get_ports {stemp}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {stemp}]
+
+## CONTROLES
+set_property PACKAGE_PIN T18 [get_ports {seg_btn}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {seg_btn}]
+set_property PACKAGE_PIN J3 [get_ports {seg_ext}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {seg_ext}]
+	set_property PULLDOWN true [get_ports {seg_ext}]
+set_property PACKAGE_PIN W17 [get_ports {desp}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {desp}]
+
+## SWITCHES (Ajustes)
+set_property PACKAGE_PIN V16 [get_ports {ajuste[0]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {ajuste[0]}]
+set_property PACKAGE_PIN W16 [get_ports {ajuste[1]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {ajuste[1]}]
+
+## DEBUG (Chaves de Enable)
+set_property PACKAGE_PIN V15 [get_ports {chaves_enable[0]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {chaves_enable[0]}]
+set_property PACKAGE_PIN W14 [get_ports {chaves_enable[1]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {chaves_enable[1]}]
+set_property PACKAGE_PIN W13 [get_ports {chaves_enable[2]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {chaves_enable[2]}]
+set_property PACKAGE_PIN V2 [get_ports {chaves_enable[3]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {chaves_enable[3]}]
+set_property PACKAGE_PIN T3 [get_ports {chaves_enable[4]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {chaves_enable[4]}]
+
+## LEDS DE STATUS (Zonas ativadas, etc)
+set_property PACKAGE_PIN U15 [get_ports {leds_status[0]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {leds_status[0]}]
+set_property PACKAGE_PIN U14 [get_ports {leds_status[1]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {leds_status[1]}]
+set_property PACKAGE_PIN V14 [get_ports {leds_status[2]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {leds_status[2]}]
+set_property PACKAGE_PIN V13 [get_ports {leds_status[3]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {leds_status[3]}]
+set_property PACKAGE_PIN V3 [get_ports {leds_status[4]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {leds_status[4]}]
+
+## =========================================================
+## DISPLAY DE 7 SEGMENTOS 
+## =========================================================
+
+set_property PACKAGE_PIN W7 [get_ports {leds[0]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {leds[0]}]
+set_property PACKAGE_PIN W6 [get_ports {leds[1]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {leds[1]}]
+set_property PACKAGE_PIN U8 [get_ports {leds[2]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {leds[2]}]
+set_property PACKAGE_PIN V8 [get_ports {leds[3]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {leds[3]}]
+set_property PACKAGE_PIN U5 [get_ports {leds[4]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {leds[4]}]
+set_property PACKAGE_PIN V5 [get_ports {leds[5]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {leds[5]}]
+set_property PACKAGE_PIN U7 [get_ports {leds[6]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {leds[6]}]
+
+## ANODOS (Controle do Display)
+set_property PACKAGE_PIN U2 [get_ports {an[0]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {an[0]}]
+set_property PACKAGE_PIN U4 [get_ports {an[1]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {an[1]}]
+set_property PACKAGE_PIN V4 [get_ports {an[2]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {an[2]}]
+set_property PACKAGE_PIN W4 [get_ports {an[3]}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {an[3]}]
+
+## =========================================================
+## PMODS e SENSORES
+## =========================================================
+set_property PACKAGE_PIN J1 [get_ports {esp32}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {esp32}]
+#set_property PACKAGE_PIN G2 [get_ports {disparo}]
+#	set_property IOSTANDARD LVCMOS33 [get_ports {disparo}]
+set_property PACKAGE_PIN J2 [get_ports {dtemp}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {dtemp}]
+
+# Zonas e Sensores
+set_property PACKAGE_PIN K2 [get_ports {z2}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {z2}]
+	set_property PULLDOWN true [get_ports {z2}]
+set_property PACKAGE_PIN G3 [get_ports {z5}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {z5}]
+	set_property PULLDOWN true [get_ports {z5}]
+
+# Ultrassônico
+set_property PACKAGE_PIN A17 [get_ports {trigger}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {trigger}]
+set_property PACKAGE_PIN C16 [get_ports {echo}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {echo}]
+
+# Saídas de Alarme e Zonas extras
+set_property PACKAGE_PIN K17 [get_ports {alarme}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {alarme}]
+set_property PACKAGE_PIN M18 [get_ports {Buzzer}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {Buzzer}]
+set_property PACKAGE_PIN L17 [get_ports {z3}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {z3}]
+	set_property PULLDOWN true [get_ports {z3}]
+set_property PACKAGE_PIN P17 [get_ports {z1}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {z1}]
+	set_property PULLDOWN true [get_ports {z1}]
+
+set_property CONFIG_VOLTAGE 3.3 [current_design]
+set_property CFGBVS VCCO [current_design]
