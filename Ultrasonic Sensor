@@ -1,0 +1,87 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity Ultra is
+    Port ( 
+        clk        : in  STD_LOGIC; -- Clock 100MHz da Basys 3
+        echo       : in  STD_LOGIC; -- Entrada vinda do pino Echo
+        trigger    : out STD_LOGIC; -- Saída para o pino Trigger
+        sensor_out : out STD_LOGIC  -- Saída Lógica: '1' se detectar obstáculo
+    );
+end Ultra;
+
+architecture Behavioral of Ultra is
+
+    -- === CONFIGURAÇÕES E CONSTANTES ===
+    -- Clock: 100 MHz (1 ciclo = 10ns)
+    
+    -- Largura do pulso de Trigger (10us = 1.000 ciclos)
+    constant TRIG_WIDTH : integer := 1000; 
+    
+    -- Ciclo total de leitura (60ms = 6.000.000 ciclos)
+    -- Isso evita que o sensor dispare rápido demais e confunda os ecos
+    constant READ_CYCLE : integer := 6000000; 
+    
+    -- Limite de Distância para disparar o alarme
+    -- 1cm = 58us = 5.800 ciclos
+    -- 10cm = 58.000 ciclos
+    -- 20cm = 116.000 ciclos
+    constant DIST_LIMIT : integer := 116000; -- Configurado para ~20cm
+
+    -- === SINAIS INTERNOS ===
+    signal count_timer   : integer range 0 to READ_CYCLE := 0;
+    signal echo_width    : integer range 0 to READ_CYCLE := 0;
+    signal distance_reg  : integer range 0 to READ_CYCLE := 0;
+    
+    -- Sincronização do sinal de entrada (Echo)
+    signal echo_sync     : std_logic_vector(1 downto 0) := "00";
+
+begin
+
+    -- PROCESSO 1: Gerador de Trigger e Temporização Global
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            -- Contador principal (0 a 60ms)
+            if count_timer < READ_CYCLE then
+                count_timer <= count_timer + 1;
+            else
+                count_timer <= 0; -- Reinicia o ciclo
+            end if;
+
+            -- Gera o sinal de Trigger nos primeiros 10us do ciclo
+            if count_timer < TRIG_WIDTH then
+                trigger <= '1';
+            else
+                trigger <= '0';
+            end if;
+        end if;
+    end process;
+
+    -- PROCESSO 2: Medição do Pulso de Echo (Calcula a Distância)
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            -- Sincroniza o sinal 'echo' (que vem de fora) com o clock da FPGA
+            -- Isso evita falhas de leitura (metaestabilidade)
+            echo_sync <= echo_sync(0) & echo;
+
+            if echo_sync(1) = '1' then
+                -- Se o Echo está ALTO, conta o tempo
+                echo_width <= echo_width + 1;
+            else
+                -- Quando o Echo baixa (fim da leitura):
+                if echo_width > 0 then
+                    distance_reg <= echo_width; -- Salva a distância medida
+                end if;
+                echo_width <= 0; -- Zera para a próxima
+            end if;
+        end if;
+    end process;
+
+    -- LÓGICA DE SAÍDA
+    -- Aciona 'sensor_out' se a distância for MENOR que o limite (e maior que zero/ruído)
+    sensor_out <= '1' when (distance_reg < DIST_LIMIT and distance_reg > 1000) else '0';
+
+end Behavioral;
