@@ -1,0 +1,204 @@
+#include <WiFi.h>
+#include <SinricPro.h>
+#include <SinricProContactsensor.h>
+#include <SinricProSwitch.h>
+#include <ESP_Mail_CLIENT.h>
+
+/* ====================================================================
+   ÁREA DE CONFIGURAÇÃO - PREENCHA AQUI
+   ==================================================================== */
+
+// 1. CONFIGURAÇÕES DE REDE
+#define WIFI_SSID             "xxxxx"
+#define WIFI_PASS             "xxxxxxxxxxxxxx"
+
+// 2. CONFIGURAÇÕES SINRIC PRO (Google Home)
+#define APP_KEY               "2792cc50-5e0e-43c3-9746-69aa7923756a"
+#define APP_SECRET            "82ab9bab-0184-445d-a4a0-f3ca1a5b0276-12b78368-7215-48e0-b41b-033426386f74"
+#define ID_SENSOR_BASYS       "6939efcd729a4887d7e0fe9e" // Device ID do Sensor
+#define ID_BOTAO_ALARME       "6939ee4f6ebb39d664cac803"       // Device ID do Botão Armar/Desarmar
+
+// 3. CONFIGURAÇÕES GMAIL
+#define EMAIL_REMETENTE       "xxxxx@gmail.com"
+#define SENHA_APP_GMAIL       "xxxx xxxx xxxx xxxx"  // Senha de App (16 letras)
+#define EMAIL_DESTINO         "xxxxx@gmail.com"
+
+/* ==================================================================== */
+
+// Pinos e Variáveis Globais (4 PINOS - LADO ESQUERDO)
+#define PINO_DISPARO_BASYS      32 // INPUT: Sinal de intrusão (BASYS -> ESP32)
+#define PINO_RESET_TRIGGER      33 // INPUT: Reset/Soft Reboot (BASYS -> ESP32)
+
+#define PINO_CONFIRMACAO_EMAIL  25 // OUTPUT: Confirmação de e-mail enviado (ESP32 -> BASYS)
+// O PINO_ARMA_ALARME agora sinaliza o estado completo: HIGH = ARMADO, LOW = DESARMADO
+#define PINO_STATUS_ALARME      26 // OUTPUT: Sinal de Armado (HIGH) ou Desarmado (LOW)
+
+bool sistemaArmado = true; // Começa armado por padrão
+bool estadoAtual = LOW;
+bool ultimoEstado = LOW;
+
+// Objetos globais
+SMTPSession smtp;
+
+// --- FUNÇÃO DE ENVIO DE E-MAIL GENÉRICA ---
+// Esta função envia o e-mail e pulsa o pino de confirmação
+void enviarEmail(String assunto, String corpo) {
+  // Desabilita debug do SMTP para não poluir o serial (mude para 1 se der erro)
+  smtp.debug(0);
+
+  SMTP_Message message;
+  message.sender.name = "Sistema de Vigilancia TCC";
+  message.sender.email = EMAIL_REMETENTE;
+  message.addRecipient("Usuario", EMAIL_DESTINO);
+  
+  message.subject = assunto;
+  message.text.content = corpo;
+
+  Session_Config config;
+  config.server.host_name = "smtp.gmail.com";
+  config.server.port = 465;
+  config.login.email = EMAIL_REMETENTE;
+  config.login.password = SENHA_APP_GMAIL;
+  config.login.user_domain = "";
+
+  Serial.println("[EMAIL] Tentando enviar e-mail...");
+
+  if (!smtp.connect(&config)){
+    Serial.printf("[EMAIL] Erro na conexão: %s\n", smtp.errorReason().c_str());
+    return;
+  }
+  
+  if (!MailClient.sendMail(&smtp, &message)) {
+    Serial.printf("[EMAIL] Erro ao enviar: %s\n", smtp.errorReason().c_str());
+  }
+  else {
+    Serial.println("[EMAIL] E-mail enviado com sucesso!");
+    // Confirmação do envio para a BASYS3 (Pulse HIGH)
+    digitalWrite(PINO_CONFIRMACAO_EMAIL, HIGH);
+    delay(100); // Pulso de 100ms
+    digitalWrite(PINO_CONFIRMACAO_EMAIL, LOW);
+  }
+}
+
+// --- FUNÇÃO ESPECÍFICA PARA ALERTA DE INTRUSÃO ---
+void enviarEmailAlerta() {
+    String assunto = "ALERTA: Intrusao Detectada!";
+    String texto = "ALERTA!\n\nO sensor da FPGA Basys3 detectou movimento.\n";
+    texto += "O sistema estava ARMADO no momento do evento.\n";
+    texto += "Verifique as cameras ou o local.";
+    enviarEmail(assunto, texto);
+}
+
+// --- CALLBACKS DO SINRIC PRO ---
+
+// Quando o estado do alarme é alterado (Armar/Desarmar)
+bool onPowerState(const String &deviceId, bool &state) {
+  sistemaArmado = state;
+  Serial.printf("[SISTEMA] Alarme %s\n", sistemaArmado ? "ARMADO" : "DESARMADO");
+
+  // Lógica para enviar e-mail ao Armar/Desarmar
+  String assunto, texto;
+  if (sistemaArmado) {
+      assunto = "NOTIFICACAO: Sistema Armado";
+      texto = "O sistema de vigilância foi ARMADO via Google Home/App.";
+  } else {
+      assunto = "NOTIFICACAO: Sistema Desarmado";
+      texto = "O sistema de vigilância foi DESARMADO via Google Home/App.";
+  }
+  
+  // Saída para BASYS3: Define o estado (HIGH para ARMADO, LOW para DESARMADO)
+  digitalWrite(PINO_STATUS_ALARME, sistemaArmado ? HIGH : LOW);
+  
+  enviarEmail(assunto, texto);
+
+  return true;  
+}
+
+// Callback do sensor (necessário para a biblioteca)
+bool onSensorState(const String &deviceId, bool &state) { return true; }
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Configuração dos Pinos
+  // Entradas (INPUT)
+  pinMode(PINO_DISPARO_BASYS, INPUT);
+  pinMode(PINO_RESET_TRIGGER, INPUT);
+  
+  // Saídas (OUTPUT)
+  pinMode(PINO_CONFIRMACAO_EMAIL, OUTPUT);
+  pinMode(PINO_STATUS_ALARME, OUTPUT);
+
+  // Inicializa os pinos de saída
+  digitalWrite(PINO_CONFIRMACAO_EMAIL, LOW);
+  // Estado inicial: Armado (sistemaArmado = true, então PINO_STATUS_ALARME = HIGH)
+  digitalWrite(PINO_STATUS_ALARME, HIGH); 
+  
+  // Conexão WiFi
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  Serial.print("Conectando ao WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println("\nWiFi Conectado!");
+
+  // Configuração E-mail (Reconexão automática)
+  MailClient.networkReconnect(true);
+
+  // Configuração Sinric - Botão Armar
+  SinricProSwitch &meuBotao = SinricPro[ID_BOTAO_ALARME];
+  meuBotao.onPowerState(onPowerState);
+
+  // Configuração Sinric - Sensor Basys
+  SinricProContactsensor &meuSensor = SinricPro[ID_SENSOR_BASYS];
+  meuSensor.onPowerState(onSensorState);
+
+  // Inicia Sinric
+  SinricPro.begin(APP_KEY, APP_SECRET);
+  Serial.println("Sistema Iniciado e Pronto.");
+}
+
+void loop() {
+  SinricPro.handle(); // Mantém a conexão com o Google Home viva
+
+  // Leitura do pino de Disparo de Alarme
+  estadoAtual = digitalRead(PINO_DISPARO_BASYS);
+
+  // Lógica de Detecção (Borda de Subida)
+  if (estadoAtual == HIGH && ultimoEstado == LOW) {
+    
+    // VERIFICA SE ESTÁ ARMADO ANTES DE AGIR
+    if (sistemaArmado) {
+      Serial.println("--- INTRUSAO DETECTADA ---");
+      
+      // 1. Avisa o Sinric (Gera rotina no Google Home)
+      SinricProContactsensor &meuSensor = SinricPro[ID_SENSOR_BASYS];
+      meuSensor.sendContactSensorEvent(true);
+      Serial.println("[SINRIC] Evento enviado para Google Home.");
+
+      // 2. Envia o E-mail de Alerta
+      enviarEmailAlerta();
+      
+    } else {
+      Serial.println("Movimento detectado, mas o sistema esta DESARMADO.");
+    }
+  }
+
+  // Lógica de Soft Reset (Ativado pela BASYS3)
+  if (digitalRead(PINO_RESET_TRIGGER) == HIGH) {
+      Serial.println("[SISTEMA] Sinal de Reset Recebido da BASYS3. Reiniciando...");
+      delay(500); // Dá tempo para o serial print
+      ESP.restart(); // Comando para reiniciar o ESP32
+  }
+
+  // Reseta o sensor virtual quando o sinal físico baixar (Borda de Descida)
+  if (estadoAtual == LOW && ultimoEstado == HIGH) {
+      SinricProContactsensor &meuSensor = SinricPro[ID_SENSOR_BASYS];
+      meuSensor.sendContactSensorEvent(false);  
+      // Serial.println("Sensor normalizado.");
+  }
+
+  ultimoEstado = estadoAtual;
+  delay(100); // Pequeno delay para estabilidade
+}
