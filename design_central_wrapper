@@ -1,0 +1,89 @@
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+library UNISIM;
+use UNISIM.VCOMPONENTS.ALL;
+entity design_central_wrapper is
+  port (
+    Buzzer : out STD_LOGIC;
+    RST : in STD_LOGIC;
+    ajuste : in STD_LOGIC_VECTOR ( 1 downto 0 );
+    alarme : out STD_LOGIC;
+    an : out STD_LOGIC_VECTOR ( 3 downto 0 );
+    chaves_enable : in STD_LOGIC_VECTOR ( 4 downto 0 );
+    clk : in STD_LOGIC;
+    desp : in STD_LOGIC;
+    dtemp : out STD_LOGIC;
+    echo : in STD_LOGIC;
+    esp32 : out STD_LOGIC;
+    leds : out STD_LOGIC_VECTOR ( 6 downto 0 );
+    leds_status : out STD_LOGIC_VECTOR ( 4 downto 0 );
+    reset : in STD_LOGIC;
+    resete : out STD_LOGIC;
+    seg_btn : in STD_LOGIC;
+    seg_ext : in STD_LOGIC;
+    stemp : out STD_LOGIC;
+    trigger : out STD_LOGIC;
+    z1 : in STD_LOGIC;
+    z2 : in STD_LOGIC;
+    z3 : in STD_LOGIC;
+    z5 : in STD_LOGIC
+  );
+end design_central_wrapper;
+
+architecture STRUCTURE of design_central_wrapper is
+  component design_central is
+  port (
+    clk : in STD_LOGIC;
+    dtemp : out STD_LOGIC;
+    stemp : out STD_LOGIC;
+    ajuste : in STD_LOGIC_VECTOR ( 1 downto 0 );
+    an : out STD_LOGIC_VECTOR ( 3 downto 0 );
+    resete : out STD_LOGIC;
+    Buzzer : out STD_LOGIC;
+    trigger : out STD_LOGIC;
+    chaves_enable : in STD_LOGIC_VECTOR ( 4 downto 0 );
+    leds_status : out STD_LOGIC_VECTOR ( 4 downto 0 );
+    z3 : in STD_LOGIC;
+    z2 : in STD_LOGIC;
+    z5 : in STD_LOGIC;
+    desp : in STD_LOGIC;
+    z1 : in STD_LOGIC;
+    RST : in STD_LOGIC;
+    reset : in STD_LOGIC;
+    seg_btn : in STD_LOGIC;
+    seg_ext : in STD_LOGIC;
+    esp32 : out STD_LOGIC;
+    alarme : out STD_LOGIC;
+    echo : in STD_LOGIC;
+    leds : out STD_LOGIC_VECTOR ( 6 downto 0 )
+  );
+  end component design_central;
+begin
+design_central_i: component design_central
+     port map (
+      Buzzer => Buzzer,
+      RST => RST,
+      ajuste(1 downto 0) => ajuste(1 downto 0),
+      alarme => alarme,
+      an(3 downto 0) => an(3 downto 0),
+      chaves_enable(4 downto 0) => chaves_enable(4 downto 0),
+      clk => clk,
+      desp => desp,
+      dtemp => dtemp,
+      echo => echo,
+      esp32 => esp32,
+      leds(6 downto 0) => leds(6 downto 0),
+      leds_status(4 downto 0) => leds_status(4 downto 0),
+      reset => reset,
+      resete => resete,
+      seg_btn => seg_btn,
+      seg_ext => seg_ext,
+      stemp => stemp,
+      trigger => trigger,
+      z1 => z1,
+      z2 => z2,
+      z3 => z3,
+      z5 => z5
+    );
+end STRUCTURE;
