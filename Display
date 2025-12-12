@@ -1,0 +1,38 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity Display is
+    Port ( 
+        seg    : in  STD_LOGIC;
+        alarme : in  STD_LOGIC;
+        leds   : out STD_LOGIC_VECTOR (6 downto 0); -- Segmentos (g a a)
+        an     : out STD_LOGIC_VECTOR (3 downto 0)  -- NOVO: Escolhe o dígito
+    );
+end Display;
+
+architecture Behavioral of Display is
+    constant LETRA_d : STD_LOGIC_VECTOR(6 downto 0) := "0100001"; -- ou "0100001" se anodo comum invertido
+    constant LETRA_A : STD_LOGIC_VECTOR(6 downto 0) := "0001000"; -- ou 0001000
+    constant LETRA_U : STD_LOGIC_VECTOR(6 downto 0) := "1000001"; -- ou 1000001
+
+begin
+    
+    -- CONFIGURAÇÃO DOS ANODOS (IMPORTANTE)
+    -- Para displays Anodo Comum (padrão Basys3/Nexys):
+    -- '0' Liga o dígito, '1' Desliga.
+    -- Aqui ligamos apenas o dígito da direita (an(0)) e desligamos os outros 3.
+    an <= "1110"; 
+
+    process(seg, alarme)
+    begin
+        if (seg = '0') then
+            leds <= LETRA_d; -- Desarmado (d minúsculo)
+        else
+            if (alarme = '1') then
+                leds <= LETRA_U; -- Disparado (U)
+            else
+                leds <= LETRA_A; -- Armado (A)
+            end if;
+        end if;
+    end process;
+end Behavioral;
