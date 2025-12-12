@@ -1,0 +1,342 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+
+
+entity unidade_controle is
+    Port ( clk : in STD_LOGIC;
+           stemp : in STD_LOGIC;
+           dtemp : out STD_LOGIC;
+           z1, z2, z3, z4, z5 : in STD_LOGIC;
+           alarme : out STD_LOGIC;
+           desp : in STD_LOGIC;
+           resete : out STD_LOGIC;
+           esp32 : out STD_LOGIC;
+        --   eao: out std_logic_vector(3 downto 0);
+           seg : in STD_LOGIC);
+           
+   signal ea: std_logic_vector(3 downto 0) := "0000";
+   signal clk1, clk2, clk3, spulso: std_logic;
+   signal stempi, z1i, z2i, z3i, z4i, z5i, segi, despi, resetei: std_logic;
+   signal dtempi, esp32i: std_logic;
+   
+end unidade_controle;
+
+architecture Behavioral of unidade_controle is
+
+component atrasador is  
+    Port ( clk : in STD_LOGIC;
+       clk1 : out STD_LOGIC;
+       clk2 : out STD_LOGIC;
+       clk3 : out STD_LOGIC;
+       spulso : out STD_LOGIC);
+end component;
+
+
+begin
+
+atrasadori: atrasador
+  port map(
+    clk => clk,
+    clk1 => clk1,
+    clk2 => clk2,
+    clk3 => clk3,
+    spulso => spulso
+    );
+
+process(clk1)
+begin
+   if rising_edge(clk1) then
+      stempi <= stemp;
+      z1i <= z1;
+      z2i <= z2;
+      z3i <= z3;
+      z4i <= z4;
+      z5i <= z5;
+      segi <= seg;
+      despi <=desp;
+      
+  end if;
+end process;
+
+process(clk2)
+begin
+   if rising_edge(clk2) then
+
+--if (ea="1001" or ea="1010" or ea="1011" or ea="1100" or ea="1101" or ea="1110" or ea="1111") then
+--    ea <= "0000";
+--end if;
+
+if (ea="0000") then
+    if (segi='0') then
+        ea <="0000";
+    else
+        ea <="0001";
+    end if;
+end if;
+
+if (ea="0001") then
+  ea <= "0010";
+end if;
+
+if (ea="0010") then
+  if stempi='0' then
+      ea <= "0010";
+      else
+      ea <= "0011";
+  end if;
+end if;
+
+if (ea="0011") then
+  if stempi='1' then
+      ea <= "0011";
+      else
+      ea <= "0100";
+  end if;
+end if;
+
+if (ea="0100") then
+  if (segi='1' and z1i='0' and z2i='0' and z3i='0' and z4i='0' and z5i='0') then
+  ea <= "0100"; 
+  elsif (segi='0') then
+  ea <= "0000";
+  elsif (z1i='1' or z2i='1') then
+  ea <= "0101";
+  elsif (z3i='1' or z4i='1' or z5i='1') then
+  ea <= "1000";
+  else
+  ea <= "1000";
+  end if;
+end if;
+
+if (ea="0101") then
+   ea <= "0110";
+end if;
+  
+if (ea="0110") then
+  if stempi='0' then
+      ea <= "0110";
+      else
+      ea <= "0111";
+  end if;
+end if;
+
+if (ea="0111") then
+  if stempi='1' then
+      ea <= "0111";
+      elsif (segi='0') then
+      ea <= "0000";
+      else
+      ea <= "1000";
+  end if;
+end if;
+
+if (ea="1000") then
+  if (segi='1' AND stemp='0') then
+    ea <= "1001";
+    else
+    ea <= "0000";
+  end if;
+end if;
+
+if (ea="1001") then
+  if (segi='1') then
+    ea <= "1010";
+    else
+    ea <= "0000";
+  end if;
+end if;
+
+if (ea="1010") then
+  if (segi='1' AND stemp='0') then
+    ea <= "1010";
+    elsif(seg='1' AND stemp='1') then
+    ea <= "1011";
+    else
+    ea <= "0000";
+  end if;
+end if;
+
+if (ea="1011") then
+  if (segi='1' AND stemp='1') then
+    ea <= "1011";
+    elsif(stemp='0' AND desp='1' AND seg='1') then
+    ea <= "1100";
+    elsif(seg='1' AND stemp='0' AND desp='1') then
+    ea <= "1101";
+    else
+    ea <= "0000";
+  end if;
+end if;
+
+if (ea="1100") then
+  if (segi='1') then
+    ea <= "1100";
+    else
+    ea <= "0000";
+  end if;
+end if;
+
+if (ea="1101") then
+  if (segi='1') then
+    ea <= "1110";
+    else
+    ea <= "0000";
+  end if;
+end if;
+
+if (ea="1110") then
+  if (segi='1' AND stemp='0') then
+    ea <= "1110";
+    elsif(seg='1' AND stemp='1') then
+    ea <= "1111";
+    else
+    ea <= "0000";
+  end if;
+end if;
+
+if (ea="1111") then
+  if (segi='1' AND stemp='1') then
+    ea <= "1111";
+    elsif (seg='1' AND stemp='0') then
+    ea <= "1000";
+    else
+    ea <= "0000";
+  end if;
+end if;
+
+end if;
+end process;
+
+process(clk3)
+begin
+if rising_edge(clk3) then
+
+if (ea="0000") then
+   dtempi <= '0';
+   alarme <= '0';
+   esp32i <= '0';
+   resetei <='0';
+end if;
+
+if (ea="0001") then
+   dtempi <= '1';
+   alarme <= '0';
+   esp32i <= '0';
+   resetei <='0';
+end if;
+
+if (ea="0010") then
+   dtempi <= '0';
+   alarme <= '0';
+   esp32i <= '0';
+   resetei <='0';
+end if;
+
+if (ea="0011") then
+   dtempi <= '0';
+   alarme <= '0';
+   esp32i <= '0';
+   resetei <='0';
+end if;
+
+if (ea="0100") then
+   dtempi <= '0';
+   alarme <= '0';
+   esp32i <= '0';
+   resetei <='0';
+end if;
+
+if (ea="0101") then
+   dtempi <= '1';
+   alarme <= '0';
+   esp32i <= '0';
+   resetei <='0';
+end if;
+
+if (ea="0110") then
+   dtempi <= '0';
+   alarme <= '0';
+   esp32i <= '0';
+   resetei <='0';
+end if;
+
+if (ea="0111") then
+   dtempi <= '0';
+   alarme <= '0';
+   esp32i <= '0';
+   resetei <='0';
+end if;
+
+if (ea="1000") then
+   dtempi <= '0';
+   alarme <= '1';
+   esp32i <= '1';
+   resetei <='0';
+end if;
+
+if (ea="1001") then
+   dtempi <= '1';
+   alarme <= '1';
+   esp32i <= '0';
+   resetei <='0';
+end if;
+
+if (ea="1010") then
+   dtempi <= '0';
+   alarme <= '1';
+   esp32i <= '0';
+   resetei <='0';
+end if;
+
+if (ea="1011") then
+   dtempi <= '0';
+   alarme <= '1';
+   esp32i <= '0';
+   resetei <='0';
+end if;
+
+if (ea="1100") then
+   dtempi <= '0';
+   alarme <= '1';
+   esp32i <= '0';
+   resetei <='0';
+end if;
+
+if (ea="1101") then
+   dtempi <= '1';
+   alarme <= '1';
+   esp32i <= '0';
+   resetei <='1';
+end if;
+
+if (ea="1110") then
+   dtempi <= '0';
+   alarme <= '1';
+   esp32i <= '0';
+   resetei <='0';
+end if;
+
+if (ea="1111") then
+   dtempi <= '0';
+   alarme <= '1';
+   esp32i <= '0';
+   resetei <='0';
+end if;
+
+--if (ea="1001" or ea="1010" or ea="1011" or ea="1100" or ea="1101" or ea="1110" or ea="1111") then
+--dtempi <= '0';
+--alarme <= '0';
+--esp32i <= '0';
+--end if;
+
+end if;
+end process;       
+
+esp32 <= spulso and esp32i;
+dtemp <= dtempi and spulso;
+
+
+--eao <= ea;
+
+end Behavioral;
