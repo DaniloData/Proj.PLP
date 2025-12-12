@@ -1,0 +1,68 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity debug_zonas is
+    Port (
+        -- NOVAS ENTRADAS NECESSÁRIAS PARA A MEMÓRIA
+        clk : in STD_LOGIC;   -- Clock de 100MHz
+        reset : in STD_LOGIC; -- Botão para limpar os LEDs (SW3 ou Btn)
+
+        -- Entradas Físicas (Vêm dos Sensores)
+        z1_in : in STD_LOGIC;
+        z2_in : in STD_LOGIC;
+        z3_in : in STD_LOGIC;
+        z4_in : in STD_LOGIC;
+        z5_in : in STD_LOGIC;
+        
+        -- Chaves (Para Ativar/Desativar envio para central)
+        chaves_enable : in STD_LOGIC_VECTOR (4 downto 0);
+        
+        -- Saídas para o Sistema (Passagem de sinal em tempo real)
+        z1_out : out STD_LOGIC;
+        z2_out : out STD_LOGIC;
+        z3_out : out STD_LOGIC;
+        z4_out : out STD_LOGIC;
+        z5_out : out STD_LOGIC;
+        
+        -- LEDs de Debug (AGORA COM MEMÓRIA/LATCH)
+        leds_status : out STD_LOGIC_VECTOR (4 downto 0)
+    );
+end debug_zonas;
+
+architecture Behavioral of debug_zonas is
+    -- Sinal interno para memorizar quem disparou
+    signal leds_memoria : STD_LOGIC_VECTOR(4 downto 0) := "00000";
+begin
+
+    -- PROCESSO DE MEMÓRIA (LATCH)
+    -- Transforma pulso rápido em nível constante
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            -- Se apertar Reset, apaga todos os LEDs de debug
+            if reset = '1' then
+                leds_memoria <= "00000";
+            else
+                -- Se o sensor detectar algo, GRAVA '1' na memória
+                -- E mantém '1' mesmo que o sensor pare de detectar
+                if z1_in = '1' then leds_memoria(0) <= '1'; end if;
+                if z2_in = '1' then leds_memoria(1) <= '1'; end if;
+                if z3_in = '1' then leds_memoria(2) <= '1'; end if;
+                if z4_in = '1' then leds_memoria(3) <= '1'; end if;
+                if z5_in = '1' then leds_memoria(4) <= '1'; end if;
+            end if;
+        end if;
+    end process;
+
+    -- Conecta a memória aos LEDs físicos
+    leds_status <= leds_memoria;
+
+    -- Lógica de Saída para a Central (Mantém em tempo real + Chave)
+    -- A central recebe o sinal cru (mas habilitado pela chave) para processar a lógica dela
+    z1_out <= z1_in when chaves_enable(0) = '1' else '0';
+    z2_out <= z2_in when chaves_enable(1) = '1' else '0';
+    z3_out <= z3_in when chaves_enable(2) = '1' else '0';
+    z4_out <= z4_in when chaves_enable(3) = '1' else '0';
+    z5_out <= z5_in when chaves_enable(4) = '1' else '0';
+
+end Behavioral;
